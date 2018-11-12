@@ -1,0 +1,23 @@
+#	   user: root
+#	machine: ce23-amd64-builder
+#	   tree: /builder/pfsense-234/tmp/stage-dir/usr/local/etc
+#	   date: Wed May  3 16:11:45 2017
+
+# .
+/set type=file uid=0 gid=0 mode=0755 nlink=1 flags=none
+.               type=dir nlink=3 time=1493831260.000000000
+
+# ./pkg
+pkg             type=dir nlink=3 time=1493831260.000000000
+
+# ./pkg/repos
+/set type=file uid=0 gid=0 mode=0644 nlink=1 flags=none
+repos           type=dir mode=0755 nlink=2 time=1493831260.000000000
+    FreeBSD.conf \
+                size=26 time=1493831260.000000000
+# ./pkg/repos
+..
+
+# ./pkg
+..
+

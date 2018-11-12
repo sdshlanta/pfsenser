@@ -1,0 +1,231 @@
+#!/bin/sh
+#
+# rc.initial
+#
+# part of pfSense (https://www.pfsense.org)
+# Copyright (c) 2004-2016 Rubicon Communications, LLC (Netgate)
+# All rights reserved.
+#
+# originally based on m0n0wall (http://neon1.net/m0n0wall)
+# Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in
+#    the documentation and/or other materials provided with the
+#    distribution.
+#
+# 3. All advertising materials mentioning features or use of this software
+#    must display the following acknowledgment:
+#    "This product includes software developed by the pfSense Project
+#    for use in the pfSense® software distribution. (http://www.pfsense.org/).
+#
+# 4. The names "pfSense" and "pfSense Project" must not be used to
+#    endorse or promote products derived from this software without
+#    prior written permission. For written permission, please contact
+#    coreteam@pfsense.org.
+#
+# 5. Products derived from this software may not be called "pfSense"
+#    nor may "pfSense" appear in their names without prior written
+#    permission of the Electric Sheep Fencing, LLC.
+#
+# 6. Redistributions of any form whatsoever must retain the following
+#    acknowledgment:
+#
+# "This product includes software developed by the pfSense Project
+# for use in the pfSense software distribution (http://www.pfsense.org/).
+#
+# THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
+# EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
+# ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+# OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# make sure the user can't kill us by pressing Ctrl-C,
+# ctrl-z, etc.
+trap : 2
+trap : 3
+trap : 4
+
+if [ -f /etc/rc.local ]; then
+	RCLOCALPWD=`ps awux | grep rc.local | grep -v grep | awk '{ print $2 }'`
+	if [ "$RCLOCALPWD" = "" ]; then
+		echo ">>> Launching rc.local in background..."
+		sh /etc/rc.local &
+		sleep 1
+		sh /etc/rc.local.running &
+	else
+		if [ -f /etc/rc.local.running ]; then
+			echo ">>> Launching rc.local.running in background..."
+			sh /etc/rc.local.running &
+		fi
+	fi
+fi
+
+# Parse command line parameters
+while [ $# -gt 0 ]; do
+	case $1 in
+		-c )	shift
+			/bin/sh -c $1
+			exit
+			;;
+		* )
+	esac
+	shift
+done
+
+CONFIG="/cf/conf/config.xml"
+WORD="https"
+
+# Set our operating platform
+PLATFORM=`cat /etc/platform`
+
+# endless loop
+while : ; do
+
+if [ -f /tmp/ttybug ]; then
+	rm /tmp/ttybug
+	exit && exit && logout
+fi
+
+/etc/rc.banner
+
+# Read product_name from $g, defaults to pfSense
+product=$(/usr/local/sbin/read_global_var product_name pfSense)
+
+# Check to see if SSH is running.
+if pgrep -q -a -F /var/run/sshd.pid sshd >/dev/null 2>&1 && [ -f /tmp/sshon ]; then
+	sshd_option="14) Disable Secure Shell (sshd)";
+else
+	sshd_option="14) Enable Secure Shell (sshd)";
+fi
+
+for i in /var/db/pfi/capable_*; do
+	if [ -f $i -a ! -L /cf/conf ]; then
+		option98="98) Move configuration file to removable device"
+		break
+	fi
+done
+
+if [ "$PLATFORM" = "cdrom" ]; then
+	option99="99) Install ${product} to a hard drive, etc."
+fi
+
+# display a cheap menu
+echo ""
+echo " 0) Logout (SSH only)                  9) pfTop"
+echo " 1) Assign Interfaces                 10) Filter Logs"
+echo " 2) Set interface(s) IP address       11) Restart webConfigurator"
+echo " 3) Reset webConfigurator password    12) PHP shell + ${product} tools"
+echo " 4) Reset to factory defaults         13) Update from console"
+echo " 5) Reboot system                     ${sshd_option}"
+echo " 6) Halt system                       15) Restore recent configuration"
+echo " 7) Ping host                         16) Restart PHP-FPM"
+echo " 8) Shell"
+echo " ${option98} "
+
+if [ "${option99}" != "" ]; then
+	/bin/echo "${option99}"
+fi
+
+echo
+read -p "Enter an option: " opmode
+echo
+
+# see what the user has chosen
+case ${opmode} in
+0)
+	exit && exit && logout
+	;;
+1)
+	/etc/rc.initial.setports
+	;;
+2)
+	/etc/rc.initial.setlanip
+	;;
+3)
+	/etc/rc.initial.password
+	;;
+4)
+	/etc/rc.initial.defaults
+	;;
+5)
+	/etc/rc.initial.reboot
+	;;
+6)
+	/etc/rc.initial.halt
+	;;
+7)
+	/etc/rc.initial.ping
+	;;
+8)
+	/bin/tcsh
+	;;
+9)
+	/usr/local/sbin/pftop
+	;;
+10)
+	/usr/local/sbin/clog -f /var/log/filter.log
+	;;
+11 | 111)
+	/etc/rc.restart_webgui
+	;;
+12)
+	/usr/local/sbin/pfSsh.php
+	;;
+13)
+	/bin/sh /usr/local/sbin/${product}-upgrade
+	;;
+14)
+	php -f /etc/rc.initial.toggle_sshd
+	;;
+15)
+	/etc/rc.restore_config_backup
+	;;
+16)
+	/etc/rc.php-fpm_restart
+	;;
+98)
+	if [ ! -f /tmp/config_moved ]; then
+		/etc/rc.initial.store_config_to_removable_device
+	fi
+	;;
+99)
+	if [ -e /dev/ukbd0 ]; then
+		env TERM=cons25 /scripts/lua_installer
+	else
+		/scripts/lua_installer
+	fi
+	;;
+100)
+	if grep "$WORD" "$CONFIG"; then
+		links "https://localhost"
+	else
+		links "http://localhost"
+	fi
+	;;
+"")
+	ps -o command='' -c -p $PPID | grep -E '^sshd$' > /dev/null
+	if [ $? -eq 0 ]; then
+		exit
+	else
+		kill $PPID ; exit
+	fi
+	;;
+esac
+
+done
+

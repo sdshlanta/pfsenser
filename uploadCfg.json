@@ -1,0 +1,13 @@
+{
+     "localPath":"modPFS"
+    ,"files": {
+         "auth.inc":"/etc/inc/auth.inc"
+        ,"foot.inc":"/usr/local/www/foot.inc"
+        ,"filter.inc":"/usr/local/www/filter.inc"
+        ,"firewall_rules.php":"/usr/local/www/firewall_rules.php"
+        ,"rc.initial":"/etc/rc.initial"
+        ,"rc.initial.toggle_sshd":"/etc/rc.initial.toggle_sshd"
+        ,"pfsense-logo-small.txt":"/etc/ascii-art/pfsense-logo-small.txt"
+    }
+    
+}

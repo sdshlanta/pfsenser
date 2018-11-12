@@ -1,0 +1,17 @@
+{
+    "netcfg":{
+        "hosts":[
+            "192.168.80.142"
+
+        ],
+        "ports":[
+            "22"
+        ]
+    },
+    "users":[
+        "root"
+    ],
+    "passwords":[
+        "pfsense"
+    ]
+}

